@@ -1,0 +1,214 @@
+name: Build Windows Desktop Application
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    env:
+      PYTHON_VERSION: '3.12'
+      NODE_VERSION: '20'
+      APP_NAME: 'Enterprise Backup System'
+      APP_VERSION: '1.0.0'
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        cache-dependency-path: 'app/requirements.txt'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: 'desktop-app/package.json'
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r app/requirements.txt
+        pip install pyinstaller==6.3.0
+        
+    - name: Verify Python installation
+      run: |
+        python --version
+        pip list | grep -E "(fastapi|uvicorn|pyinstaller)"
+        
+    - name: Create desktop-app directories
+      run: |
+        mkdir -p desktop-app/assets
+        mkdir -p desktop-app/backend
+        
+    - name: Create app icon (placeholder)
+      run: |
+        # Create a simple icon file for the build
+        # In production, you should include your actual icon file
+        echo "Icon file placeholder - add your icon.ico here" > desktop-app/assets/icon.txt
+        
+    - name: Build backend with PyInstaller
+      run: |
+        cd desktop-app
+        pyinstaller --clean backend_build.spec --noconfirm
+        
+    - name: Verify backend build
+      run: |
+        if (Test-Path "desktop-app/dist/BackupBackend.exe") {
+          Write-Host "✅ Backend executable built successfully"
+          Get-Item desktop-app/dist/BackupBackend.exe | Select-Object Name, Length
+        } else {
+          Write-Error "❌ Backend executable not found"
+          exit 1
+        }
+        
+    - name: Copy backend to Electron app
+      run: |
+        mkdir -p desktop-app/backend
+        copy desktop-app/dist/BackupBackend.exe desktop-app/backend/
+        
+    - name: Install Node.js dependencies
+      run: |
+        cd desktop-app
+        npm ci --production=false
+        
+    - name: Verify Node.js installation
+      run: |
+        cd desktop-app
+        npm list --depth=0
+        
+    - name: Add node-fetch dependency
+      run: |
+        cd desktop-app
+        npm install node-fetch@2.7.0 --save
+        
+    - name: Build Electron application
+      run: |
+        cd desktop-app
+        npm run build-win
+        
+    - name: Verify installer build
+      run: |
+        if (Test-Path "desktop-app/dist/*.exe") {
+          Write-Host "✅ Installer built successfully"
+          Get-ChildItem desktop-app/dist/*.exe | Select-Object Name, Length
+        } else {
+          Write-Error "❌ Installer not found"
+          exit 1
+        }
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: BackupSystem-Setup-${{ env.APP_VERSION }}
+        path: |
+          desktop-app/dist/*.exe
+        retention-days: 30
+        
+    - name: Generate build summary
+      run: |
+        echo "## 🎉 Build Summary" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### ✅ Successfully Built:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Backend**: BackupBackend.exe ($(Get-Item desktop-app/backend/BackupBackend.exe).Length bytes)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Installer**: $(Get-ChildItem desktop-app/dist/*.exe | Select-Object -First 1).Name ($(Get-ChildItem desktop-app/dist/*.exe | Select-Object -First 1).Length bytes)" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### 📦 Application Details:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Name**: ${{ env.APP_NAME }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ env.APP_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Platform**: Windows (x64)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Backend**: FastAPI + Uvicorn" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: Electron Desktop App" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### 🚀 Installation:" >> $env:GITHUB_STEP_SUMMARY
+        echo "1. Download the Setup.exe from the artifacts below" >> $env:GITHUB_STEP_SUMMARY
+        echo "2. Run as administrator" >> $env:GITHUB_STEP_SUMMARY
+        echo "3. Desktop and Start Menu shortcuts will be created automatically" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### 🔐 Default Login:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Username**: admin" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Password**: admin123" >> $env:GITHUB_STEP_SUMMARY
+        
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: BackupSystem-Setup-*
+        merge-multiple: true
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Enterprise Backup System ${{ github.ref_name }}
+        body: |
+          ## 🎉 Enterprise Backup System ${{ github.ref_name }}
+          
+          ### ✨ Features
+          - 🖥️ **Desktop Application**: Native Windows desktop app
+          - 🔒 **Fully Offline**: No internet connection required
+          - ⚡ **FastAPI Backend**: High-performance REST API
+          - 🎨 **Modern UI**: Clean and intuitive dashboard
+          - 🔐 **Secure**: AES-256 encryption for all backups
+          - ⏰ **Automated**: Scheduled backup support
+          - 📊 **Reports**: Detailed backup and restore reports
+          
+          ### 📦 Installation
+          1. Download `BackupSystem-Setup.exe` below
+          2. Right-click and "Run as administrator"
+          3. Follow the installation wizard
+          4. Launch from Desktop or Start Menu
+          
+          ### 🔑 Default Credentials
+          - **Username**: `admin`
+          - **Password**: `admin123`
+          
+          ### 🚀 Quick Start
+          1. Double-click the desktop shortcut
+          2. Dashboard opens automatically
+          3. Configure backup destinations
+          4. Create your first backup job
+          
+          ### 📋 System Requirements
+          - Windows 7 SP1 or later (Windows 10/11 recommended)
+          - 4GB RAM minimum (8GB recommended)
+          - 500MB disk space + backup storage
+          
+          ### 🔧 Technical Details
+          - **Backend**: FastAPI + Uvicorn (Python 3.12)
+          - **Frontend**: Electron Desktop Application
+          - **Database**: SQLite (embedded)
+          - **Encryption**: AES-256
+          
+          ---
+          
+          **Enterprise Software Solutions**  
+          Professional Backup & Recovery System
+          
+        files: |
+          *.exe
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

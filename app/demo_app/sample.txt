@@ -1,0 +1,16 @@
+This is a sample web application file for backup testing.
+
+Created: 2026-01-30
+Purpose: Demo content for the offline backup system
+
+Sample application structure:
+- index.html (main page)
+- styles.css (styling)
+- script.js (functionality)
+- config.json (configuration)
+
+This file will be included in all backup operations to demonstrate
+the backup and recovery functionality.
+
+Note: In a real scenario, this would be a complete web application
+with multiple files, databases, and assets.

@@ -1,0 +1,117 @@
+{
+  "name": "enterprise-backup-system",
+  "version": "1.0.0",
+  "description": "Enterprise Backup & Recovery System - Desktop Application",
+  "main": "main.js",
+  "homepage": "./",
+  "author": {
+    "name": "Enterprise Software Solutions",
+    "email": "support@enterprise-backup.com"
+  },
+  "license": "Proprietary",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "build-linux": "electron-builder --linux",
+    "build-mac": "electron-builder --mac",
+    "dist": "npm run build",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps",
+    "build-backend": "python backend_build.py",
+    "clean": "rimraf dist build backend/BackupBackend.exe"
+  },
+  "build": {
+    "appId": "com.enterprise.backup.system",
+    "productName": "Enterprise Backup System",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "error.html",
+      "backend/BackupBackend.exe",
+      "backend/**/*",
+      "node_modules/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "../app/templates",
+        "to": "templates",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../app/config_phase3.json",
+        "to": "config_phase3.json"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "publisherName": "Enterprise Software Solutions"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Enterprise Backup System",
+      "include": "assets/installer.nsh",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "System"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.system-utilities"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "enterprise-backup",
+      "repo": "backup-system"
+    }
+  },
+  "dependencies": {
+    "electron-log": "^4.4.8",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

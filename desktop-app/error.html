@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Error - Enterprise Backup System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+            padding: 40px;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .icon::before {
+            content: "⚠️";
+            font-size: 40px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .description {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .error-details {
+            background: #f8f9fa;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .error-code {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #7f8c8d, #707b7c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 4px;
+            color: #27ae60;
+            font-size: 14px;
+            display: none;
+        }
+
+        .troubleshooting {
+            margin-top: 25px;
+            text-align: left;
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .troubleshooting h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .troubleshooting ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .troubleshooting li {
+            padding: 5px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .troubleshooting li::before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #95a5a6;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon"></div>
+        <h1>Backend Connection Error</h1>
+        <p class="description">
+            The Enterprise Backup System backend could not be reached. The application is trying to establish a connection.
+        </p>
+        
+        <div class="error-details">
+            <div class="error-code">Error: Backend Unavailable</div>
+            <div>Target: http://127.0.0.1:8001</div>
+            <div id="retry-count">Retrying... (0)</div>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="retryConnection()">
+                <span id="retry-text">🔄 Retry Now</span>
+            </button>
+            <button class="btn btn-secondary" onclick="quitApp()">
+                ❌ Quit Application
+            </button>
+        </div>
+        
+        <div class="status" id="status">
+            <div class="loading"></div>
+            Attempting to reconnect...
+        </div>
+        
+        <div class="troubleshooting">
+            <h3>🔧 Troubleshooting Steps</h3>
+            <ul>
+                <li>Check if another application is using port 8001</li>
+                <li>Restart the application</li>
+                <li>Run as administrator if permission issues occur</li>
+                <li>Check system resources (memory, disk space)</li>
+                <li>Verify antivirus is not blocking the application</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            Enterprise Backup System v1.0.0<br>
+            © 2024 Enterprise Software Solutions
+        </div>
+    </div>
+
+    <script>
+        let retryCount = 0;
+        let maxRetries = 30;
+        let retryInterval = null;
+
+        function updateRetryCount() {
+            document.getElementById('retry-count').textContent = `Retrying... (${retryCount})`;
+        }
+
+        function showStatus(show) {
+            const status = document.getElementById('status');
+            status.style.display = show ? 'block' : 'none';
+        }
+
+        async function checkBackend() {
+            try {
+                const response = await fetch('http://127.0.0.1:8001/health', {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    clearInterval(retryInterval);
+                    showStatus(false);
+                    document.querySelector('.container').innerHTML = `
+                        <div class="icon" style="background: linear-gradient(135deg, #27ae60, #229954);">
+                            <span style="font-size: 40px;">✅</span>
+                        </div>
+                        <h1>Connection Established!</h1>
+                        <p class="description">
+                            The backend is now available. Redirecting to the dashboard...
+                        </p>
+                        <div class="status" style="display: block; background: #e8f5e8;">
+                            <div class="loading"></div>
+                            Loading dashboard...
+                        </div>
+                    `;
+                    
+                    // Redirect to main application
+                    setTimeout(() => {
+                        window.location.href = 'http://127.0.0.1:8001';
+                    }, 2000);
+                    
+                    return true;
+                }
+            } catch (error) {
+                // Backend not ready yet
+                return false;
+            }
+            return false;
+        }
+
+        async function retryConnection() {
+            retryCount++;
+            updateRetryCount();
+            showStatus(true);
+            
+            const retryText = document.getElementById('retry-text');
+            retryText.innerHTML = '<div class="loading" style="width: 16px; height: 16px; margin-right: 8px;"></div> Retrying...';
+            
+            const connected = await checkBackend();
+            
+            if (!connected) {
+                retryText.innerHTML = '🔄 Retry Now';
+                showStatus(false);
+                
+                if (retryCount >= maxRetries) {
+                    document.querySelector('.error-details').innerHTML += `
+                        <div style="color: #e74c3c; margin-top: 10px;">
+                            Maximum retry attempts reached. Please restart the application.
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function quitApp() {
+            if (window.electronAPI) {
+                window.electronAPI.quitApp();
+            } else {
+                window.close();
+            }
+        }
+
+        // Auto-retry every 3 seconds
+        retryInterval = setInterval(async () => {
+            if (retryCount < maxRetries) {
+                await retryConnection();
+            } else {
+                clearInterval(retryInterval);
+            }
+        }, 3000);
+
+        // Initial check
+        window.addEventListener('load', () => {
+            setTimeout(retryConnection, 1000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (retryInterval) {
+                clearInterval(retryInterval);
+            }
+        });
+    </script>
+</body>
+</html>

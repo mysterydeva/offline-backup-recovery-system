@@ -1,0 +1,76 @@
+{
+    "backup": {
+        "source_directory": "./demo_app",
+        "storage_directory": "./storage/backups",
+        "restore_directory": "./restored",
+        "compression_level": 6,
+        "encryption_enabled": true,
+        "default_backup_type": "full"
+    },
+    "scheduler": {
+        "enabled": true,
+        "interval_minutes": 1
+    },
+    "logging": {
+        "log_file": "./logs/backup.log",
+        "level": "INFO"
+    },
+    "database": {
+        "path": "./backup_system.db"
+    },
+    "server": {
+        "host": "0.0.0.0",
+        "port": 8001
+    },
+    "retention": {
+        "max_backups": 10,
+        "max_age_days": 30,
+        "enabled": true
+    },
+    "quota": {
+        "max_storage_mb": 500,
+        "warning_threshold_mb": 400
+    },
+    "security": {
+        "encryption_key_file": "./config/secret.key",
+        "session_timeout_hours": 24
+    },
+    "databases": [
+        {
+            "type": "sqlite",
+            "path": "./demo_app/database.sqlite3"
+        }
+    ],
+    "applications": [
+        {
+            "name": "DemoApp",
+            "source": "./demo_app",
+            "description": "Demo application for backup testing"
+        }
+    ],
+    "verification": {
+        "enabled": true,
+        "sandbox_directory": "./sandbox_restore",
+        "auto_verify": true,
+        "cleanup_hours": 24
+    },
+    "snapshots": {
+        "enabled": false,
+        "type": "lvm",
+        "auto_cleanup": true,
+        "max_snapshots": 5
+    },
+    "disaster_recovery": {
+        "enabled": true,
+        "recovery_directory": "./disaster_recovery",
+        "auto_verify": true,
+        "restore_configs": true,
+        "generate_reports": true
+    },
+    "plugins": {
+        "enabled": false,
+        "directory": "./plugins",
+        "offline_mode": true,
+        "disabled_reason": "Offline mode - no external dependencies allowed"
+    }
+}

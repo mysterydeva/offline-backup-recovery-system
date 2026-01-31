@@ -1,11 +1,103 @@
+# Virtual environments
 venv/
+app/venv/
+*/venv/
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# PyInstaller specific
+*.spec
+!desktop-app/backend_build.spec
+release/windows-installer/build/
+release/windows-installer/dist/
+release/windows-installer/package/
+
+# Inno Setup output
+BackupSystem_Setup.exe
+*.exe
+
+# Backup data and storage
 storage/backups/
+app/storage/backups/
+*/storage/backups/
+*.backup
+*.bak
+
+# Restore directories
 restored/
+app/restored/
+*/restored/
+
+# Sandbox restore
 sandbox_restore/
+app/sandbox_restore/
+*/sandbox_restore/
+
+# Logs
 logs/
+app/logs/
+*/logs/
+*.log
+
+# Database files
 backup_system.db
+app/backup_system.db
+*.db-journal
+*.db-wal
+
+# Configuration and secrets
 config/secret.key
+app/config/secret.key
+*/config/secret.key
+secret.key
 .env
+.env.local
+.env.production
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation build
+docs/_build/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Node modules (if any)
+node_modules/
+
+# Keep important release files
+!release/windows-installer/*.bat
+!release/windows-installer/*.sh
+!release/windows-installer/*.iss
+!release/windows-installer/*.md
+!release/windows-installer/run_app.py
 
