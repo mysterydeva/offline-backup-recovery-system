@@ -74,6 +74,23 @@ jobs:
         New-Item -ItemType Directory -Force -Path $assetsPath | Out-Null
         Write-Host "✅ Created/verified assets directory: $assetsPath"
         
+        # Check if icon.ico exists (should be committed to repo)
+        $iconPath = "$assetsPath\icon.ico"
+        if (Test-Path $iconPath) {
+          Write-Host "✅ Real icon.ico found at: $iconPath"
+          $iconInfo = Get-ChildItem $iconPath
+          Write-Host "📊 Icon size: $($iconInfo.Length) bytes"
+          if ($iconInfo.Length -lt 1000) {
+            Write-Host "⚠️  Icon seems too small, should be at least 256x256 pixels"
+          }
+        } else {
+          Write-Host "❌ icon.ico not found at: $iconPath"
+          Write-Host "⚠️  Please commit a real 256x256 icon.ico file to desktop-app/assets/"
+          Write-Host "📁 Current assets directory contents:"
+          Get-ChildItem $assetsPath | Select-Object Name, Length
+          exit 1
+        }
+        
         # Only create installer.nsh (icon.ico should be in repo)
         $installerPath = "$assetsPath\installer.nsh"
         if (!(Test-Path $installerPath)) {
@@ -84,19 +101,8 @@ jobs:
           Write-Host "✅ installer.nsh already exists at: $installerPath"
         }
         
-        # Check if icon.ico exists (should be committed to repo)
-        $iconPath = "$assetsPath\icon.ico"
-        if (Test-Path $iconPath) {
-          Write-Host "✅ Real icon.ico found at: $iconPath"
-          Get-ChildItem $iconPath | Select-Object Name, Length
-        } else {
-          Write-Host "❌ icon.ico not found at: $iconPath"
-          Write-Host "⚠️  Please commit a real 256x256 icon.ico file to desktop-app/assets/"
-          exit 1
-        }
-        
         # Verify final assets
-        Write-Host "📁 Assets directory contents:"
+        Write-Host "📁 Final assets directory contents:"
         Get-ChildItem $assetsPath | Select-Object Name, Length
         
     - name: Install Node.js dependencies
@@ -176,10 +182,21 @@ jobs:
         Write-Host "📋 Copying backend to Electron app..."
         $source = "${{ github.workspace }}\app\dist\BackupBackend.exe"
         $destination = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
+        
+        # Verify source exists
+        if (!(Test-Path $source)) {
+          Write-Host "❌ Backend executable not found at: $source"
+          Write-Host "📁 Contents of app/dist directory:"
+          Get-ChildItem "${{ github.workspace }}\app\dist" | Select-Object Name, Length
+          exit 1
+        }
+        
+        # Copy backend
         copy $source $destination
         if (Test-Path $destination) {
           Write-Host "✅ Backend copied successfully"
-          Get-Item $destination | Select-Object Name, Length
+          $backendInfo = Get-ChildItem $destination
+          Write-Host "📊 Backend size: $($backendInfo.Length) bytes"
         } else {
           Write-Host "❌ Failed to copy backend"
           exit 1
@@ -195,23 +212,47 @@ jobs:
       run: |
         Write-Host "🏗️ Building Electron application..."
         cd "${{ github.workspace }}\desktop-app"
-        npm run build-win
+        
+        # Verify backend exists before building
+        $backendPath = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
+        if (!(Test-Path $backendPath)) {
+          Write-Host "❌ Backend executable not found at: $backendPath"
+          Write-Host "📁 Contents of desktop-app/backend directory:"
+          Get-ChildItem "${{ github.workspace }}\desktop-app\backend" | Select-Object Name, Length
+          exit 1
+        }
+        
+        # Verify icon exists before building
+        $iconPath = "${{ github.workspace }}\desktop-app\assets\icon.ico"
+        if (!(Test-Path $iconPath)) {
+          Write-Host "❌ Icon file not found at: $iconPath"
+          exit 1
+        }
+        
+        Write-Host "📊 Pre-build verification:"
+        Write-Host "- Backend: $(Get-ChildItem $backendPath).Length bytes"
+        Write-Host "- Icon: $(Get-ChildItem $iconPath).Length bytes"
+        
+        # Build with --publish never to avoid GH_TOKEN requirement
+        npm run build-win -- --publish=never
         
     - name: Verify installer build
       run: |
         Write-Host "🔍 Verifying installer build..."
         $distPath = "${{ github.workspace }}\desktop-app\dist"
         Write-Host "📁 Contents of dist directory:"
-        dir $distPath
+        Get-ChildItem $distPath | Select-Object Name, Length
         
         $installer = Get-ChildItem $distPath\*.exe -Recurse | Where-Object { $_.Name -like "*Setup*" }
         if ($installer) {
           Write-Host "✅ Installer built successfully"
-          $installer | Select-Object Name, Length
+          Write-Host "📊 Installer: $($installer.Name) ($($installer.Length) bytes)"
         } else {
           Write-Host "❌ Setup installer not found"
           Write-Host "🔍 Looking for any .exe files:"
           Get-ChildItem $distPath\*.exe -Recurse | Select-Object Name, Length
+          Write-Host "📁 Full dist directory listing:"
+          Get-ChildItem $distPath -Recurse | Select-Object Name, Length
           exit 1
         }
         

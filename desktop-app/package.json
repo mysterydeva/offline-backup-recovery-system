@@ -13,13 +13,12 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "build": "electron-builder",
-    "build-win": "electron-builder --win nsis",
-    "build-linux": "electron-builder --linux",
-    "build-mac": "electron-builder --mac",
+    "build": "electron-builder --publish never",
+    "build-win": "electron-builder --win nsis --publish never",
+    "build-linux": "electron-builder --linux --publish never",
+    "build-mac": "electron-builder --mac --publish never",
     "dist": "npm run build",
-    "pack": "electron-builder --dir",
-    "postinstall": "electron-builder install-app-deps",
+    "pack": "electron-builder --dir --publish never",
     "build-backend": "python backend_build.py",
     "clean": "rimraf dist build backend/BackupBackend.exe"
   },
@@ -94,11 +93,6 @@
       ],
       "icon": "assets/icon.icns",
       "category": "public.app-category.system-utilities"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "enterprise-backup",
-      "repo": "backup-system"
     }
   },
   "dependencies": {
