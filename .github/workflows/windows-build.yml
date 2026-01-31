@@ -31,31 +31,23 @@ jobs:
         echo "Current directory: $(pwd)"
         dir
         echo ""
-        echo "=== CHECKING backup_system DIRECTORY ==="
-        if (Test-Path "${{ github.workspace }}\backup_system") {
-          echo "✅ backup_system directory found"
-          dir "${{ github.workspace }}\backup_system"
+        echo "=== CHECKING app DIRECTORY ==="
+        if (Test-Path "${{ github.workspace }}\app") {
+          echo "✅ app directory found"
+          dir "${{ github.workspace }}\app"
         } else {
-          echo "❌ backup_system directory not found"
+          echo "❌ app directory not found"
           dir "${{ github.workspace }}"
           exit 1
         }
         echo ""
-        echo "=== CHECKING APP DIRECTORY ==="
-        if (Test-Path "${{ github.workspace }}\backup_system\app") {
-          echo "✅ app directory found"
-          dir "${{ github.workspace }}\backup_system\app"
-        } else {
-          echo "❌ app directory not found"
-          exit 1
-        }
-        echo ""
-        echo "=== CHECKING DESKTOP-APP DIRECTORY ==="
-        if (Test-Path "${{ github.workspace }}\backup_system\desktop-app") {
+        echo "=== CHECKING desktop-app DIRECTORY ==="
+        if (Test-Path "${{ github.workspace }}\desktop-app") {
           echo "✅ desktop-app directory found"
-          dir "${{ github.workspace }}\backup_system\desktop-app"
+          dir "${{ github.workspace }}\desktop-app"
         } else {
           echo "❌ desktop-app directory not found"
+          dir "${{ github.workspace }}"
           exit 1
         }
         
@@ -64,18 +56,18 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-        cache-dependency-path: '${{ github.workspace }}\backup_system\app\requirements.txt'
+        cache-dependency-path: '${{ github.workspace }}\app\requirements.txt'
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: '${{ github.workspace }}\backup_system\desktop-app\package.json'
+        cache-dependency-path: '${{ github.workspace }}\desktop-app\package.json'
         
     - name: Create package-lock.json if missing
       run: |
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         if (!(Test-Path "package-lock.json")) {
           Write-Host "📦 package-lock.json not found, generating..."
           npm install --package-lock-only
@@ -85,7 +77,7 @@ jobs:
         
     - name: Create placeholder assets if missing
       run: |
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         if (!(Test-Path "assets")) {
           Write-Host "📁 Creating assets directory..."
           mkdir assets
@@ -106,7 +98,7 @@ jobs:
       run: |
         Write-Host "🐍 Installing Python dependencies..."
         python -m pip install --upgrade pip setuptools wheel
-        pip install -r "${{ github.workspace }}\backup_system\app\requirements.txt"
+        pip install -r "${{ github.workspace }}\app\requirements.txt"
         pip install pyinstaller==6.3.0
         
     - name: Verify Python installation
@@ -120,36 +112,36 @@ jobs:
     - name: Create build directories
       run: |
         Write-Host "📁 Creating build directories..."
-        mkdir -p "${{ github.workspace }}\backup_system\desktop-app\backend"
-        mkdir -p "${{ github.workspace }}\backup_system\desktop-app\dist"
+        mkdir -p "${{ github.workspace }}\desktop-app\backend"
+        mkdir -p "${{ github.workspace }}\desktop-app\dist"
         
     - name: Build backend executable with PyInstaller
       run: |
         Write-Host "🔨 Building backend executable..."
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         pyinstaller --clean backend_build.spec --noconfirm
         
     - name: Verify backend build
       run: |
         Write-Host "🔍 Verifying backend build..."
-        $backendPath = "${{ github.workspace }}\backup_system\desktop-app\dist\BackupBackend.exe"
+        $backendPath = "${{ github.workspace }}\desktop-app\dist\BackupBackend.exe"
         if (Test-Path $backendPath) {
           Write-Host "✅ Backend executable built successfully"
           Get-Item $backendPath | Select-Object Name, Length
         } else {
           Write-Host "❌ Backend executable not found at: $backendPath"
           Write-Host "📁 Contents of dist directory:"
-          dir "${{ github.workspace }}\backup_system\desktop-app\dist"
+          dir "${{ github.workspace }}\desktop-app\dist"
           Write-Host "📁 Contents of desktop-app directory:"
-          dir "${{ github.workspace }}\backup_system\desktop-app"
+          dir "${{ github.workspace }}\desktop-app"
           exit 1
         }
         
     - name: Copy backend to Electron app
       run: |
         Write-Host "📋 Copying backend to Electron app..."
-        $source = "${{ github.workspace }}\backup_system\desktop-app\dist\BackupBackend.exe"
-        $destination = "${{ github.workspace }}\backup_system\desktop-app\backend\BackupBackend.exe"
+        $source = "${{ github.workspace }}\desktop-app\dist\BackupBackend.exe"
+        $destination = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
         copy $source $destination
         if (Test-Path $destination) {
           Write-Host "✅ Backend copied successfully"
@@ -162,25 +154,25 @@ jobs:
     - name: Install Node.js dependencies
       run: |
         Write-Host "📦 Installing Node.js dependencies..."
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         npm install --production=false
         
     - name: Verify Node.js installation
       run: |
         Write-Host "🔍 Verifying Node.js installation..."
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         npm list --depth=0
         
     - name: Build Electron application
       run: |
         Write-Host "🏗️ Building Electron application..."
-        cd "${{ github.workspace }}\backup_system\desktop-app"
+        cd "${{ github.workspace }}\desktop-app"
         npm run build-win
         
     - name: Verify installer build
       run: |
         Write-Host "🔍 Verifying installer build..."
-        $distPath = "${{ github.workspace }}\backup_system\desktop-app\dist"
+        $distPath = "${{ github.workspace }}\desktop-app\dist"
         Write-Host "📁 Contents of dist directory:"
         dir $distPath
         
@@ -200,16 +192,16 @@ jobs:
       with:
         name: BackupSystem-Setup-${{ env.APP_VERSION }}
         path: |
-          ${{ github.workspace }}\backup_system\desktop-app\dist\*Setup*.exe
+          ${{ github.workspace }}\desktop-app\dist\*Setup*.exe
         retention-days: 30
         
     - name: Generate build summary
       run: |
-        $installer = Get-ChildItem "${{ github.workspace }}\backup_system\desktop-app\dist\*Setup*.exe" -Recurse | Where-Object { $_.Name -like "*Setup*" }
+        $installer = Get-ChildItem "${{ github.workspace }}\desktop-app\dist\*Setup*.exe" -Recurse | Where-Object { $_.Name -like "*Setup*" }
         echo "## 🎉 Build Summary" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "### ✅ Successfully Built:" >> $env:GITHUB_STEP_SUMMARY
-        echo "- **Backend**: BackupBackend.exe ($(Get-Item "${{ github.workspace }}\backup_system\desktop-app\backend\BackupBackend.exe").Length bytes)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- **Backend**: BackupBackend.exe ($(Get-Item "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe").Length bytes)" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Installer**: $($installer.Name) ($($installer.Length) bytes)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "### 📦 Application Details:" >> $env:GITHUB_STEP_SUMMARY
