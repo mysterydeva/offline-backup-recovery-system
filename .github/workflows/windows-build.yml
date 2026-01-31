@@ -67,25 +67,54 @@ jobs:
         
     - name: Create placeholder assets if missing
       run: |
+        Write-Host "🔍 Current directory: $(pwd)"
+        Write-Host "🎯 Target directory: ${{ github.workspace }}\desktop-app"
+        
+        # Ensure we're in the correct directory
         cd "${{ github.workspace }}\desktop-app"
+        Write-Host "📍 Changed to: $(pwd)"
+        
+        # Verify desktop-app structure
+        Write-Host "📁 Desktop-app directory contents:"
+        dir
+        
+        # Create assets directory if it doesn't exist
         if (!(Test-Path "assets")) {
           Write-Host "📁 Creating assets directory..."
           mkdir assets
+          Write-Host "✅ Created assets directory"
+        } else {
+          Write-Host "✅ Assets directory already exists"
         }
+        
+        # Create icon.ico if it doesn't exist
         if (!(Test-Path "assets\icon.ico")) {
           Write-Host "🎨 Creating placeholder icon.ico..."
-          echo "Placeholder icon file" > assets\icon.txt
           # Create a minimal ICO file placeholder
           $icoBytes = [byte[]](0x00,0x00,0x01,0x00,0x01,0x00,0x10,0x10,0x00,0x00,0x01,0x00,0x08,0x00,0x68,0x04,0x00,0x00,0x16,0x00,0x00,0x00)
-          [System.IO.File]::WriteAllBytes("assets\icon.ico", $icoBytes)
-          Write-Host "✅ Created assets\icon.ico"
+          $iconPath = "assets\icon.ico"
+          [System.IO.File]::WriteAllBytes($iconPath, $icoBytes)
+          Write-Host "✅ Created $iconPath"
+          
+          # Verify the file was created
+          if (Test-Path $iconPath) {
+            Write-Host "✅ Verified icon.ico exists at: $(Get-ChildItem $iconPath).FullName"
+          } else {
+            Write-Host "❌ Failed to create icon.ico"
+            exit 1
+          }
+        } else {
+          Write-Host "✅ icon.ico already exists"
         }
+        
+        # Create installer.nsh if it doesn't exist
         if (!(Test-Path "assets\installer.nsh")) {
           Write-Host "📄 Creating placeholder installer.nsh..."
           echo "; Custom installer script" > assets\installer.nsh
           Write-Host "✅ Created assets\installer.nsh"
         }
-        Write-Host "📁 Assets directory contents:"
+        
+        Write-Host "📁 Final assets directory contents:"
         dir assets
         
     - name: Install Node.js dependencies
