@@ -65,16 +65,6 @@ jobs:
         cache: 'npm'
         cache-dependency-path: '${{ github.workspace }}\desktop-app\package.json'
         
-    - name: Create package-lock.json if missing
-      run: |
-        cd "${{ github.workspace }}\desktop-app"
-        if (!(Test-Path "package-lock.json")) {
-          Write-Host "📦 package-lock.json not found, generating..."
-          npm install --package-lock-only
-        } else {
-          Write-Host "✅ package-lock.json exists"
-        }
-        
     - name: Create placeholder assets if missing
       run: |
         cd "${{ github.workspace }}\desktop-app"
@@ -93,6 +83,12 @@ jobs:
           Write-Host "📄 Creating placeholder installer.nsh..."
           echo "; Custom installer script" > assets\installer.nsh
         }
+        
+    - name: Install Node.js dependencies
+      run: |
+        Write-Host "📦 Installing Node.js dependencies..."
+        cd "${{ github.workspace }}\desktop-app"
+        npm install --production=false
         
     - name: Install Python dependencies
       run: |
@@ -150,12 +146,6 @@ jobs:
           Write-Host "❌ Failed to copy backend"
           exit 1
         }
-        
-    - name: Install Node.js dependencies
-      run: |
-        Write-Host "📦 Installing Node.js dependencies..."
-        cd "${{ github.workspace }}\desktop-app"
-        npm install --production=false
         
     - name: Verify Node.js installation
       run: |
