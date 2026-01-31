@@ -125,34 +125,57 @@ jobs:
       run: |
         Write-Host "📁 Creating build directories..."
         mkdir -p "${{ github.workspace }}\desktop-app\backend"
-        mkdir -p "${{ github.workspace }}\desktop-app\dist"
         
     - name: Build backend executable with PyInstaller
       run: |
-        Write-Host "🔨 Building backend executable..."
-        cd "${{ github.workspace }}\desktop-app"
-        pyinstaller --clean backend_build.spec --noconfirm
+        Write-Host "🔨 Building backend executable with PyInstaller CLI..."
+        
+        # Navigate to app directory for build
+        cd "${{ github.workspace }}\app"
+        Write-Host "📍 Working directory: $(pwd)"
+        
+        # Verify required files exist
+        if (!(Test-Path "main_fixed.py")) {
+          Write-Host "❌ main_fixed.py not found in app directory"
+          exit 1
+        }
+        if (!(Test-Path "templates")) {
+          Write-Host "❌ templates directory not found"
+          exit 1
+        }
+        if (!(Test-Path "config_phase3.json")) {
+          Write-Host "❌ config_phase3.json not found"
+          exit 1
+        }
+        
+        Write-Host "📁 App directory contents:"
+        dir
+        
+        # Build using PyInstaller CLI (no spec file)
+        pyinstaller --onefile --noconsole --name BackupBackend --paths app --add-data "templates;templates" --add-data "config_phase3.json;." main_fixed.py
+        
+        Write-Host "✅ PyInstaller build completed"
         
     - name: Verify backend build
       run: |
         Write-Host "🔍 Verifying backend build..."
-        $backendPath = "${{ github.workspace }}\desktop-app\dist\BackupBackend.exe"
+        $backendPath = "${{ github.workspace }}\app\dist\BackupBackend.exe"
         if (Test-Path $backendPath) {
           Write-Host "✅ Backend executable built successfully"
           Get-Item $backendPath | Select-Object Name, Length
         } else {
           Write-Host "❌ Backend executable not found at: $backendPath"
-          Write-Host "📁 Contents of dist directory:"
-          dir "${{ github.workspace }}\desktop-app\dist"
-          Write-Host "📁 Contents of desktop-app directory:"
-          dir "${{ github.workspace }}\desktop-app"
+          Write-Host "📁 Contents of app/dist directory:"
+          dir "${{ github.workspace }}\app\dist"
+          Write-Host "📁 Contents of app directory:"
+          dir "${{ github.workspace }}\app"
           exit 1
         }
         
     - name: Copy backend to Electron app
       run: |
         Write-Host "📋 Copying backend to Electron app..."
-        $source = "${{ github.workspace }}\desktop-app\dist\BackupBackend.exe"
+        $source = "${{ github.workspace }}\app\dist\BackupBackend.exe"
         $destination = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
         copy $source $destination
         if (Test-Path $destination) {
