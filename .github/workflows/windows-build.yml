@@ -78,11 +78,15 @@ jobs:
           # Create a minimal ICO file placeholder
           $icoBytes = [byte[]](0x00,0x00,0x01,0x00,0x01,0x00,0x10,0x10,0x00,0x00,0x01,0x00,0x08,0x00,0x68,0x04,0x00,0x00,0x16,0x00,0x00,0x00)
           [System.IO.File]::WriteAllBytes("assets\icon.ico", $icoBytes)
+          Write-Host "✅ Created assets\icon.ico"
         }
         if (!(Test-Path "assets\installer.nsh")) {
           Write-Host "📄 Creating placeholder installer.nsh..."
           echo "; Custom installer script" > assets\installer.nsh
+          Write-Host "✅ Created assets\installer.nsh"
         }
+        Write-Host "📁 Assets directory contents:"
+        dir assets
         
     - name: Install Node.js dependencies
       run: |
