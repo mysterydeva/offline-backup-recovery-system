@@ -17,7 +17,6 @@ jobs:
       NODE_VERSION: '20'
       APP_NAME: 'Enterprise Backup System'
       APP_VERSION: '1.0.0'
-      WORKSPACE_DIR: '${{ github.workspace }}'
       
     steps:
     - name: Checkout repository
@@ -25,16 +24,39 @@ jobs:
       with:
         fetch-depth: 0
         
-    - name: Show workspace
+    - name: Show workspace structure
       run: |
-        echo Workspace: ${{ github.workspace }}
+        echo "=== WORKSPACE DEBUG ==="
+        echo "Workspace: ${{ github.workspace }}"
+        echo "Current directory: $(pwd)"
         dir
-        echo "Listing backup_system directory:"
+        echo ""
+        echo "=== CHECKING backup_system DIRECTORY ==="
         if (Test-Path "${{ github.workspace }}\backup_system") {
+          echo "✅ backup_system directory found"
           dir "${{ github.workspace }}\backup_system"
         } else {
-          echo "backup_system directory not found"
+          echo "❌ backup_system directory not found"
           dir "${{ github.workspace }}"
+          exit 1
+        }
+        echo ""
+        echo "=== CHECKING APP DIRECTORY ==="
+        if (Test-Path "${{ github.workspace }}\backup_system\app") {
+          echo "✅ app directory found"
+          dir "${{ github.workspace }}\backup_system\app"
+        } else {
+          echo "❌ app directory not found"
+          exit 1
+        }
+        echo ""
+        echo "=== CHECKING DESKTOP-APP DIRECTORY ==="
+        if (Test-Path "${{ github.workspace }}\backup_system\desktop-app") {
+          echo "✅ desktop-app directory found"
+          dir "${{ github.workspace }}\backup_system\desktop-app"
+        } else {
+          echo "❌ desktop-app directory not found"
+          exit 1
         }
         
     - name: Setup Python
@@ -55,81 +77,121 @@ jobs:
       run: |
         cd "${{ github.workspace }}\backup_system\desktop-app"
         if (!(Test-Path "package-lock.json")) {
-          Write-Host "package-lock.json not found, generating..."
+          Write-Host "📦 package-lock.json not found, generating..."
           npm install --package-lock-only
+        } else {
+          Write-Host "✅ package-lock.json exists"
         }
         
-    - name: Create placeholder icon if missing
+    - name: Create placeholder assets if missing
       run: |
         cd "${{ github.workspace }}\backup_system\desktop-app"
+        if (!(Test-Path "assets")) {
+          Write-Host "📁 Creating assets directory..."
+          mkdir assets
+        }
         if (!(Test-Path "assets\icon.ico")) {
-          Write-Host "Creating placeholder icon..."
-          mkdir -p assets
-          # Create a simple placeholder file
+          Write-Host "🎨 Creating placeholder icon.ico..."
           echo "Placeholder icon file" > assets\icon.txt
+          # Create a minimal ICO file placeholder
+          $icoBytes = [byte[]](0x00,0x00,0x01,0x00,0x01,0x00,0x10,0x10,0x00,0x00,0x01,0x00,0x08,0x00,0x68,0x04,0x00,0x00,0x16,0x00,0x00,0x00)
+          [System.IO.File]::WriteAllBytes("assets\icon.ico", $icoBytes)
+        }
+        if (!(Test-Path "assets\installer.nsh")) {
+          Write-Host "📄 Creating placeholder installer.nsh..."
+          echo "; Custom installer script" > assets\installer.nsh
         }
         
     - name: Install Python dependencies
       run: |
+        Write-Host "🐍 Installing Python dependencies..."
         python -m pip install --upgrade pip setuptools wheel
         pip install -r "${{ github.workspace }}\backup_system\app\requirements.txt"
         pip install pyinstaller==6.3.0
         
     - name: Verify Python installation
       run: |
+        Write-Host "🔍 Verifying Python installation..."
         python --version
         pip list | findstr fastapi
+        pip list | findstr uvicorn
         pip list | findstr pyinstaller
         
     - name: Create build directories
       run: |
+        Write-Host "📁 Creating build directories..."
         mkdir -p "${{ github.workspace }}\backup_system\desktop-app\backend"
         mkdir -p "${{ github.workspace }}\backup_system\desktop-app\dist"
         
     - name: Build backend executable with PyInstaller
       run: |
-        cd "${{ github.workspace }}\backup_system"
-        pyinstaller --onefile --noconsole --name BackupBackend --add-data "app\templates;templates" --add-data "app\config_phase3.json;." app\main_fixed.py
+        Write-Host "🔨 Building backend executable..."
+        cd "${{ github.workspace }}\backup_system\desktop-app"
+        pyinstaller --clean backend_build.spec --noconfirm
         
     - name: Verify backend build
       run: |
-        if (Test-Path "${{ github.workspace }}\backup_system\dist\BackupBackend.exe") {
+        Write-Host "🔍 Verifying backend build..."
+        $backendPath = "${{ github.workspace }}\backup_system\desktop-app\dist\BackupBackend.exe"
+        if (Test-Path $backendPath) {
           Write-Host "✅ Backend executable built successfully"
-          Get-Item "${{ github.workspace }}\backup_system\dist\BackupBackend.exe" | Select-Object Name, Length
+          Get-Item $backendPath | Select-Object Name, Length
         } else {
-          Write-Error "❌ Backend executable not found"
-          dir "${{ github.workspace }}\backup_system\dist"
+          Write-Host "❌ Backend executable not found at: $backendPath"
+          Write-Host "📁 Contents of dist directory:"
+          dir "${{ github.workspace }}\backup_system\desktop-app\dist"
+          Write-Host "📁 Contents of desktop-app directory:"
+          dir "${{ github.workspace }}\backup_system\desktop-app"
           exit 1
         }
         
     - name: Copy backend to Electron app
       run: |
-        copy "${{ github.workspace }}\backup_system\dist\BackupBackend.exe" "${{ github.workspace }}\backup_system\desktop-app\backend\"
+        Write-Host "📋 Copying backend to Electron app..."
+        $source = "${{ github.workspace }}\backup_system\desktop-app\dist\BackupBackend.exe"
+        $destination = "${{ github.workspace }}\backup_system\desktop-app\backend\BackupBackend.exe"
+        copy $source $destination
+        if (Test-Path $destination) {
+          Write-Host "✅ Backend copied successfully"
+          Get-Item $destination | Select-Object Name, Length
+        } else {
+          Write-Host "❌ Failed to copy backend"
+          exit 1
+        }
         
     - name: Install Node.js dependencies
       run: |
+        Write-Host "📦 Installing Node.js dependencies..."
         cd "${{ github.workspace }}\backup_system\desktop-app"
         npm install --production=false
         
-    - name: Add node-fetch dependency
+    - name: Verify Node.js installation
       run: |
+        Write-Host "🔍 Verifying Node.js installation..."
         cd "${{ github.workspace }}\backup_system\desktop-app"
-        npm install node-fetch@2.7.0 --save
+        npm list --depth=0
         
     - name: Build Electron application
       run: |
+        Write-Host "🏗️ Building Electron application..."
         cd "${{ github.workspace }}\backup_system\desktop-app"
         npm run build-win
         
     - name: Verify installer build
       run: |
-        $installer = Get-ChildItem "${{ github.workspace }}\backup_system\desktop-app\dist\*.exe" -Recurse | Where-Object { $_.Name -like "*Setup*" }
+        Write-Host "🔍 Verifying installer build..."
+        $distPath = "${{ github.workspace }}\backup_system\desktop-app\dist"
+        Write-Host "📁 Contents of dist directory:"
+        dir $distPath
+        
+        $installer = Get-ChildItem $distPath\*.exe -Recurse | Where-Object { $_.Name -like "*Setup*" }
         if ($installer) {
           Write-Host "✅ Installer built successfully"
           $installer | Select-Object Name, Length
         } else {
-          Write-Error "❌ Setup installer not found"
-          Get-ChildItem "${{ github.workspace }}\backup_system\desktop-app\dist\*.exe" -Recurse | Select-Object Name, Length
+          Write-Host "❌ Setup installer not found"
+          Write-Host "🔍 Looking for any .exe files:"
+          Get-ChildItem $distPath\*.exe -Recurse | Select-Object Name, Length
           exit 1
         }
         
