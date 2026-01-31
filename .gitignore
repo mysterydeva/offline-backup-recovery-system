@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+storage/backups/
+restored/
+sandbox_restore/
+logs/
+backup_system.db
+config/secret.key
+.env
+

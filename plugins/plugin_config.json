@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "offline_mode": true,
+  "available_plugins": [],
+  "disabled_reason": "Offline mode - no external dependencies allowed"
+}

@@ -1,0 +1,37 @@
+{
+    "backup": {
+        "source_directory": "./demo_app",
+        "storage_directory": "./storage/backups",
+        "restore_directory": "./restored",
+        "compression_level": 6,
+        "encryption_enabled": true
+    },
+    "scheduler": {
+        "enabled": true,
+        "interval_minutes": 1
+    },
+    "logging": {
+        "log_file": "./logs/backup.log",
+        "level": "INFO"
+    },
+    "database": {
+        "path": "./backup_system.db"
+    },
+    "server": {
+        "host": "0.0.0.0",
+        "port": 8001
+    },
+    "retention": {
+        "max_backups": 10,
+        "max_age_days": 30,
+        "enabled": true
+    },
+    "quota": {
+        "max_storage_mb": 500,
+        "warning_threshold_mb": 400
+    },
+    "security": {
+        "encryption_key_file": "./config/secret.key",
+        "session_timeout_hours": 24
+    }
+}
