@@ -67,26 +67,14 @@ jobs:
         
     - name: Create placeholder assets if missing
       run: |
-        Write-Host "🎯 Creating assets in desktop-app/assets/"
+        Write-Host "🎯 Ensuring assets directory exists..."
         
         # Create assets directory using Force parameter
         $assetsPath = "${{ github.workspace }}\desktop-app\assets"
         New-Item -ItemType Directory -Force -Path $assetsPath | Out-Null
         Write-Host "✅ Created/verified assets directory: $assetsPath"
         
-        # Create icon.ico using full path
-        $iconPath = "$assetsPath\icon.ico"
-        if (!(Test-Path $iconPath)) {
-          Write-Host "🎨 Creating placeholder icon.ico..."
-          # Create a minimal ICO file placeholder
-          $icoBytes = [byte[]](0x00,0x00,0x01,0x00,0x01,0x00,0x10,0x10,0x00,0x00,0x01,0x00,0x08,0x00,0x68,0x04,0x00,0x00,0x16,0x00,0x00,0x00)
-          [System.IO.File]::WriteAllBytes($iconPath, $icoBytes)
-          Write-Host "✅ Created icon at: $iconPath"
-        } else {
-          Write-Host "✅ icon.ico already exists at: $iconPath"
-        }
-        
-        # Create installer.nsh using full path
+        # Only create installer.nsh (icon.ico should be in repo)
         $installerPath = "$assetsPath\installer.nsh"
         if (!(Test-Path $installerPath)) {
           Write-Host "📄 Creating placeholder installer.nsh..."
@@ -94,6 +82,17 @@ jobs:
           Write-Host "✅ Created installer.nsh at: $installerPath"
         } else {
           Write-Host "✅ installer.nsh already exists at: $installerPath"
+        }
+        
+        # Check if icon.ico exists (should be committed to repo)
+        $iconPath = "$assetsPath\icon.ico"
+        if (Test-Path $iconPath) {
+          Write-Host "✅ Real icon.ico found at: $iconPath"
+          Get-ChildItem $iconPath | Select-Object Name, Length
+        } else {
+          Write-Host "❌ icon.ico not found at: $iconPath"
+          Write-Host "⚠️  Please commit a real 256x256 icon.ico file to desktop-app/assets/"
+          exit 1
         }
         
         # Verify final assets
