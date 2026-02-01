@@ -16,7 +16,7 @@ const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
 
 // Application configuration
 const config = {
-  backendExe: path.join(__dirname, 'backend', 'BackupBackend.exe'),
+  backendExe: path.join(process.resourcesPath, 'backend', 'BackupBackend.exe'),
   logFile: path.join(app.getPath('userData'), 'backup-system.log'),
   maxRetries: 30,
   retryDelay: 2000
