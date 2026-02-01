@@ -4,9 +4,9 @@ import logging
 import hashlib
 from datetime import datetime
 from typing import Tuple, List, Dict, Optional
-from security.encryption import EncryptionManager
-from security.integrity import IntegrityManager
-from database_backup import DatabaseBackupEngine
+from app.security.encryption import EncryptionManager
+from app.security.integrity import IntegrityManager
+from app.database_backup import DatabaseBackupEngine
 
 
 class BackupEngine:
@@ -28,7 +28,7 @@ class BackupEngine:
         self.db_backup_engine = DatabaseBackupEngine(config)
         
         # Database access for file tracking
-        from database import Database
+        from app.database import Database
         self.database = Database(config["database"]["path"])
         
     def setup_logging(self):
@@ -59,7 +59,7 @@ class BackupEngine:
                 return None, 0, None, False
             
             # Create backup record in database
-            from models import BackupCreate
+            from app.models import BackupCreate
             backup_create = BackupCreate(filename=backup_filename, size=0, status="in_progress")
             backup_id = self.database.create_backup_record(
                 backup_create, 
@@ -90,9 +90,6 @@ class BackupEngine:
             # Get backup size
             backup_size = os.path.getsize(backup_path)
             
-            # Generate checksum
-            checksum = self.integrity_manager.generate_checksum(backup_path) if self.encryption_enabled else None
-            
             # Encrypt if enabled
             if self.encryption_enabled:
                 encrypted_path = backup_path + ".enc"
@@ -102,8 +99,14 @@ class BackupEngine:
                     backup_filename = backup_filename + ".enc"
                     backup_size = os.path.getsize(encrypted_path)
                     self.logger.info(f"Backup encrypted: {backup_filename}")
+                    
+                    # Calculate checksum AFTER encryption (Option A - Preferred)
+                    checksum = self.integrity_manager.generate_checksum(encrypted_path)
                 else:
                     raise Exception("Encryption failed")
+            else:
+                # Calculate checksum for unencrypted backup
+                checksum = self.integrity_manager.generate_checksum(backup_path) if self.integrity_manager else None
             
             # Store file metadata in database
             self.database.store_backup_files(backup_id, files_to_backup, backup_type)

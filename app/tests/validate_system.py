@@ -19,16 +19,16 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import system modules
-from database import Database
-from backup_engine import BackupEngine
-from restore_engine import RestoreEngine
-from scheduler import BackupScheduler
-from auth import AuthManager
-from retention import RetentionManager
-from reports import ReportGenerator
-from security.encryption import EncryptionManager
-from security.integrity import IntegrityManager
-from models import BackupCreate, UserCreate
+from app.database import Database
+from app.backup_engine import BackupEngine
+from app.restore_engine import RestoreEngine
+from app.scheduler import BackupScheduler
+from app.auth import AuthManager
+from app.retention import RetentionManager
+from app.reports import ReportGenerator
+from app.security.encryption import EncryptionManager
+from app.security.integrity import IntegrityManager
+from app.models import BackupCreate, UserCreate
 
 # Configure logging for tests
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -654,8 +654,8 @@ class SystemValidator:
         logger.info("\n🔄 Testing Incremental Backups...")
         
         try:
-            from backup_engine import BackupEngine
-            from database import Database
+            from app.backup_engine import BackupEngine
+            from app.database import Database
             
             # Test backup engine incremental functionality
             backup_engine = BackupEngine(self.config)
@@ -687,7 +687,7 @@ class SystemValidator:
         logger.info("\n🗄️ Testing Database Backups...")
         
         try:
-            from database_backup import DatabaseBackupEngine
+            from app.database_backup import DatabaseBackupEngine
             
             db_engine = DatabaseBackupEngine(self.config)
             
@@ -711,7 +711,7 @@ class SystemValidator:
         logger.info("\n✅ Testing Backup Verification...")
         
         try:
-            from verification import BackupVerificationEngine
+            from app.verification import BackupVerificationEngine
             
             verification_engine = BackupVerificationEngine(self.config)
             
@@ -745,7 +745,7 @@ class SystemValidator:
         logger.info("\n🚨 Testing Disaster Recovery...")
         
         try:
-            from disaster_recovery import DisasterRecoveryManager
+            from app.disaster_recovery import DisasterRecoveryManager
             
             dr_manager = DisasterRecoveryManager(self.config)
             
@@ -793,8 +793,8 @@ class SystemValidator:
         logger.info("\n📱 Testing Multi-Application Support...")
         
         try:
-            from backup_engine import BackupEngine
-            from database import Database
+            from app.backup_engine import BackupEngine
+            from app.database import Database
             
             backup_engine = BackupEngine(self.config)
             database = Database(self.test_db_path)

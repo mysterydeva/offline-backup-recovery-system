@@ -3,8 +3,8 @@ import zipfile
 import shutil
 import logging
 from typing import Optional
-from security.encryption import EncryptionManager
-from security.integrity import IntegrityManager
+from app.security.encryption import EncryptionManager
+from app.security.integrity import IntegrityManager
 
 
 class RestoreEngine:
@@ -52,8 +52,10 @@ class RestoreEngine:
                 backup_path = temp_file
             
             # Verify checksum if provided
-            if stored_checksum and self.encryption_enabled:
-                if not self.integrity_manager.verify_checksum(backup_path, stored_checksum):
+            if stored_checksum:
+                # For encrypted files, verify against the original encrypted file
+                file_to_verify = os.path.join(self.storage_dir, backup_filename)
+                if not self.integrity_manager.verify_checksum(file_to_verify, stored_checksum):
                     self.logger.error(f"Checksum verification failed for: {backup_filename}")
                     if temp_file and os.path.exists(temp_file):
                         os.remove(temp_file)

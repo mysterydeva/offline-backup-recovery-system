@@ -323,7 +323,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    return payload
+    # Always return standardized user data with fallbacks
+    return {
+        "username": payload.get("username") or payload.get("sub", "unknown"),
+        "role": payload.get("role", payload.get("role_name", "unknown")),
+        "role_name": payload.get("role_name", payload.get("role", "unknown")),
+        "permissions": payload.get("permissions", {}),
+        "sub": payload.get("sub", payload.get("username", "unknown")),
+        "id": payload.get("id")
+    }
 
 
 def require_permission(permission: str):

@@ -7,8 +7,8 @@ from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from database import Database
-from models import BackupRecordExtended, AuditLog
+from app.database import Database
+from app.models import BackupRecordExtended, AuditLog
 
 
 class ReportGenerator:

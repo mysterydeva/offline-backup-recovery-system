@@ -9,11 +9,11 @@ import zipfile
 import logging
 from datetime import datetime
 from typing import Dict, Optional, List
-from database import Database
-from restore_engine import RestoreEngine
-from verification import BackupVerificationEngine
-from security.encryption import EncryptionManager
-from security.integrity import IntegrityManager
+from app.database import Database
+from app.restore_engine import RestoreEngine
+from app.verification import BackupVerificationEngine
+from app.security.encryption import EncryptionManager
+from app.security.integrity import IntegrityManager
 
 
 class DisasterRecoveryManager:

@@ -7,17 +7,17 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBearer
 import uvicorn
-from database import Database
-from backup_engine import BackupEngine
-from restore_engine import RestoreEngine
-from scheduler import BackupScheduler
-from auth import AuthManager, get_current_user, require_permission
-from models import (
+from app.database import Database
+from app.backup_engine import BackupEngine
+from app.restore_engine import RestoreEngine
+from app.scheduler import BackupScheduler
+from app.auth import AuthManager, get_current_user, require_permission
+from app.models import (
     BackupResponse, RestoreResponse, BackupCreate, UserCreate, UserLogin, 
     TokenResponse, SystemStatus, RetentionStatus
 )
-from reports import ReportGenerator
-from retention import RetentionManager
+from app.reports import ReportGenerator
+from app.retention import RetentionManager
 import logging
 
 # Setup logging to avoid duplicate handlers

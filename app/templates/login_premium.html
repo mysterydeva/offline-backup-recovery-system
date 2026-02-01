@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Backup System - Login</title>
+    <!-- PREMIUM LOGIN LOADED -->
     <style>
         * {
             margin: 0;
@@ -479,23 +480,36 @@
             document.querySelector('.logo-section').after(errorDiv);
         }
         
-        // Check if user is already logged in
+        // Clean up any invalid tokens on page load
         window.addEventListener('load', function() {
+            console.log('🔍 Login: Page loaded, checking existing tokens...');
             const token = localStorage.getItem('access_token');
             const user = localStorage.getItem('user');
             
+            console.log('🔍 Login: Token exists:', !!token);
+            console.log('🔍 Login: User exists:', !!user);
+            
             if (token && user) {
-                // User is already logged in, show loading and redirect
-                const loginBtn = document.getElementById('loginBtn');
-                const loading = document.getElementById('loading');
-                
-                loginBtn.textContent = '🔄 Redirecting...';
-                loginBtn.disabled = true;
-                loading.style.display = 'block';
-                
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
+                // Validate and clean up invalid tokens
+                try {
+                    const parsedUser = JSON.parse(user);
+                    if (!parsedUser || !parsedUser.username) {
+                        // Invalid user data, clear it
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('user');
+                        console.log('🧹 Login: Cleared invalid token data');
+                    } else {
+                        console.log('✅ Login: Valid token found for user:', parsedUser.username);
+                    }
+                    // NOTE: DO NOT AUTO-REDIRECT - let user login manually
+                } catch (error) {
+                    // Invalid JSON, clear it
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    console.log('🧹 Login: Cleared corrupted token data');
+                }
+            } else {
+                console.log('🔍 Login: No existing tokens found');
             }
         });
         

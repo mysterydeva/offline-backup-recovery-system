@@ -2,8 +2,8 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import List
-from database import Database
-from models import BackupRecord
+from app.database import Database
+from app.models import BackupRecord
 
 
 class RetentionManager:

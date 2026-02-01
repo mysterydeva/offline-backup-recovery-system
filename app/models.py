@@ -60,6 +60,8 @@ class BackupRecordExtended(BackupRecord):
     backup_type: str = "full"
     app_name: str = "default"
     verified: bool = False
+    verification_status: str = "pending"
+    snapshot_id: Optional[str] = None
     parent_backup_id: Optional[int] = None
 
 

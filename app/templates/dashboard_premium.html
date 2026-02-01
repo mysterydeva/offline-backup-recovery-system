@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Backup System - Dashboard</title>
+    <!-- PREMIUM DASHBOARD LOADED -->
     <style>
         * {
             margin: 0;
@@ -710,22 +711,33 @@
 
         // Check authentication on page load
         function checkAuth() {
+            console.log('🔍 Dashboard: Checking authentication...');
             authToken = localStorage.getItem('access_token');
             const userStr = localStorage.getItem('user');
             
+            console.log('🔍 Dashboard: Token exists:', !!authToken);
+            console.log('🔍 Dashboard: User exists:', !!userStr);
+            
+            // CRITICAL: Do NOT proceed without valid token
             if (!authToken || !userStr) {
-                alert('Please login first');
+                console.log('❌ Dashboard: No token found, redirecting to login');
                 window.location.href = '/login';
                 return;
             }
             
             try {
                 currentUser = JSON.parse(userStr);
+                if (!currentUser || !currentUser.username) {
+                    throw new Error('Invalid user data');
+                }
+                console.log('✅ Dashboard: Valid user found:', currentUser.username);
                 updateUserInterface();
                 loadDashboardData();
             } catch (error) {
-                console.error('Error parsing user data:', error);
-                alert('Invalid session. Please login again.');
+                console.error('❌ Dashboard: Invalid session data:', error);
+                // Clear invalid session and redirect silently
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user');
                 window.location.href = '/login';
             }
         }
@@ -765,7 +777,10 @@
                 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        alert('Session expired. Please login again.');
+                        // Clear invalid session and redirect silently
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('sessionExpiredShown');
                         window.location.href = '/login';
                         return;
                     }
@@ -870,6 +885,14 @@
                     }
                 });
                 
+                if (response.status === 401) {
+                    // Handle 401 silently
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
+                }
+                
                 const result = await response.json();
                 
                 if (response.ok) {
@@ -899,6 +922,14 @@
                     }
                 });
                 
+                if (response.status === 401) {
+                    // Handle 401 silently
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
+                }
+                
                 const result = await response.json();
                 
                 if (response.ok) {
@@ -921,6 +952,14 @@
                         'Content-Type': 'application/json'
                     }
                 });
+                
+                if (response.status === 401) {
+                    // Handle 401 silently
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
+                }
                 
                 if (response.ok) {
                     const blob = await response.blob();
@@ -950,6 +989,14 @@
                         'Content-Type': 'application/json'
                     }
                 });
+                
+                if (response.status === 401) {
+                    // Handle 401 silently
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return;
+                }
                 
                 if (response.ok) {
                     const blob = await response.blob();

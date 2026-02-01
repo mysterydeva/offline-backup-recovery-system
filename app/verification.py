@@ -9,8 +9,8 @@ import zipfile
 import logging
 from datetime import datetime
 from typing import Dict, Optional, List
-from security.encryption import EncryptionManager
-from security.integrity import IntegrityManager
+from app.security.encryption import EncryptionManager
+from app.security.integrity import IntegrityManager
 
 
 class BackupVerificationEngine:

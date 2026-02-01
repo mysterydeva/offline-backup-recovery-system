@@ -2,7 +2,7 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import List, Optional
-from models import BackupRecord, BackupCreate, BackupRecordExtended, AuditLog
+from app.models import BackupRecord, BackupCreate, BackupRecordExtended, AuditLog
 
 
 class Database:
@@ -28,10 +28,15 @@ class Database:
                 backup_type TEXT DEFAULT 'full',
                 app_name TEXT DEFAULT 'default',
                 verified INTEGER DEFAULT 0,
+                verification_status TEXT DEFAULT 'pending',
+                snapshot_id TEXT,
                 parent_backup_id INTEGER,
                 FOREIGN KEY (parent_backup_id) REFERENCES backups (id)
             )
         ''')
+        
+        # Run automatic migration for missing columns
+        self._migrate_backups_table(cursor)
         
         # Backup files tracking for incremental/differential
         cursor.execute('''
@@ -63,17 +68,60 @@ class Database:
         conn.commit()
         conn.close()
     
+    def _migrate_backups_table(self, cursor):
+        """Automatically migrate backups table to add missing columns"""
+        print("🔄 Starting database migration...")
+        
+        # Get existing columns
+        cursor.execute("PRAGMA table_info(backups)")
+        existing_columns = [row[1] for row in cursor.fetchall()]
+        print(f"📋 Existing columns: {existing_columns}")
+        
+        # Add missing columns if they don't exist
+        migrations = [
+            ("backup_type", "TEXT DEFAULT 'full'"),
+            ("app_name", "TEXT DEFAULT 'default'"),
+            ("verified", "INTEGER DEFAULT 0"),
+            ("verification_status", "TEXT DEFAULT 'pending'"),
+            ("snapshot_id", "TEXT"),
+            ("encryption_enabled", "INTEGER DEFAULT 0")
+        ]
+        
+        for column_name, column_def in migrations:
+            if column_name not in existing_columns:
+                try:
+                    cursor.execute(f"ALTER TABLE backups ADD COLUMN {column_name} {column_def}")
+                    print(f"✅ Added missing column: {column_name}")
+                except sqlite3.Error as e:
+                    print(f"⚠️  Could not add column {column_name}: {e}")
+            else:
+                print(f"✅ Column already exists: {column_name}")
+        
+        # Update existing records to have default values
+        try:
+            cursor.execute("UPDATE backups SET backup_type = 'full' WHERE backup_type IS NULL")
+            cursor.execute("UPDATE backups SET app_name = 'default' WHERE app_name IS NULL")
+            cursor.execute("UPDATE backups SET verified = 0 WHERE verified IS NULL")
+            cursor.execute("UPDATE backups SET verification_status = 'pending' WHERE verification_status IS NULL")
+            cursor.execute("UPDATE backups SET encryption_enabled = 0 WHERE encryption_enabled IS NULL")
+            print("✅ Updated existing records with default values")
+        except sqlite3.Error as e:
+            print(f"⚠️  Could not update existing records: {e}")
+        
+        print("🎉 Database migration completed!")
+    
     def create_backup_record(self, backup: BackupCreate, checksum: str = None, encrypted: bool = False, 
-                          backup_type: str = 'full', app_name: str = 'default', parent_backup_id: int = None) -> int:
+                          backup_type: str = 'full', app_name: str = 'default', parent_backup_id: int = None, 
+                          snapshot_id: str = None) -> int:
         """Create a new backup record with Phase-3 enhancements"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT INTO backups (filename, size, created_at, status, checksum, encrypted, backup_type, app_name, parent_backup_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO backups (filename, size, created_at, status, checksum, encrypted, backup_type, app_name, verified, verification_status, snapshot_id, parent_backup_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'pending', ?, ?)
         ''', (backup.filename, backup.size, datetime.now().isoformat(), backup.status, checksum, 
-              1 if encrypted else 0, backup_type, app_name, parent_backup_id))
+              1 if encrypted else 0, backup_type, app_name, snapshot_id, parent_backup_id))
         
         backup_id = cursor.lastrowid
         conn.commit()
@@ -86,7 +134,7 @@ class Database:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        cursor.execute('SELECT id, filename, size, created_at, status, checksum, encrypted, backup_type, app_name, verified, parent_backup_id FROM backups ORDER BY created_at DESC')
+        cursor.execute('SELECT id, filename, size, created_at, status, checksum, encrypted, backup_type, app_name, verified, verification_status, snapshot_id, parent_backup_id FROM backups ORDER BY created_at DESC')
         rows = cursor.fetchall()
         
         backups = []
@@ -102,7 +150,9 @@ class Database:
                 backup_type=row[7],
                 app_name=row[8],
                 verified=bool(row[9]),
-                parent_backup_id=row[10]
+                verification_status=row[10],
+                snapshot_id=row[11],
+                parent_backup_id=row[12]
             ))
         
         conn.close()
