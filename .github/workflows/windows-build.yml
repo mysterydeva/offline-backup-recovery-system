@@ -177,18 +177,18 @@ jobs:
         $exePath = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
 
         if (!(Test-Path $exePath)) {
-          Write-Host "[ERROR] EXE not found!"
+          Write-Host "EXE not found!"
           exit 1
         }
 
-        # Read first 2 bytes
-        $bytes = Get-Content $exePath -Encoding Byte -TotalCount 2
+        # Read raw bytes correctly
+        $bytes = [System.IO.File]::ReadAllBytes($exePath)
 
         if ($bytes[0] -eq 77 -and $bytes[1] -eq 90) {
-          Write-Host "[OK] Valid Windows Executable (MZ header detected)"
+          Write-Host "✅ Valid Windows EXE (MZ header detected)"
         }
         else {
-          Write-Host "[ERROR] Not a Windows EXE! Possibly Linux build"
+          Write-Host "❌ Not a Windows executable!"
           exit 1
         }
 
