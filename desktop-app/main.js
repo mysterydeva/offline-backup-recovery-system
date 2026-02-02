@@ -153,14 +153,20 @@ function createApplicationMenu() {
 function startBackend() {
   return new Promise((resolve, reject) => {
     log.info('Starting backend server...');
+    log.info('Backend Path:', config.backendExe);
+    log.info('Resources Path:', process.resourcesPath);
+    log.info('App Path:', app.getAppPath());
 
     // Check if backend executable exists
     if (!fs.existsSync(config.backendExe)) {
       const error = `Backend executable not found: ${config.backendExe}`;
       log.error(error);
+      log.error('Directory contents:', fs.readdirSync(path.dirname(config.backendExe)));
       reject(new Error(error));
       return;
     }
+
+    log.info('Backend executable found, starting process...');
 
     // Start backend process
     backendProcess = spawn(config.backendExe, [], {
