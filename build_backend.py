@@ -10,9 +10,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
+# Configure UTF-8 encoding for Windows compatibility
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 def check_dependencies():
     """Check if required dependencies are available"""
-    print("🔍 Checking dependencies...")
+    print("Checking dependencies...")
     
     required_modules = [
         'fastapi', 'uvicorn', 'cryptography', 'apscheduler', 
@@ -24,27 +30,27 @@ def check_dependencies():
     for module in required_modules:
         try:
             __import__(module)
-            print(f"✅ {module}")
+            print(f"[OK] {module}")
         except ImportError:
             missing_modules.append(module)
-            print(f"❌ {module}")
+            print(f"[ERROR] {module}")
     
     if missing_modules:
-        print(f"\n❌ Missing dependencies: {missing_modules}")
+        print(f"\n[ERROR] Missing dependencies: {missing_modules}")
         print("Install with: pip install " + " ".join(missing_modules))
         return False
     
-    print("✅ All dependencies available")
+    print("[OK] All dependencies available")
     return True
 
 def check_pyinstaller():
     """Check if PyInstaller is available"""
     try:
         subprocess.run(['pyinstaller', '--version'], capture_output=True, check=True)
-        print("✅ PyInstaller available")
+        print("[OK] PyInstaller available")
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("❌ PyInstaller not found")
+        print("[ERROR] PyInstaller not found")
         print("Install with: pip install pyinstaller")
         return False
 
@@ -140,18 +146,18 @@ exe = EXE(
     with open(spec_path, 'w') as f:
         f.write(spec_content)
     
-    print(f"✅ Created spec file: {spec_path}")
+    print(f"[OK] Created spec file: {spec_path}")
     return spec_path
 
 def build_executable():
     """Build the executable using PyInstaller"""
-    print("🔨 Building BackupBackend.exe...")
+    print("Building BackupBackend.exe...")
     
     # Clean previous builds
     for path in ['build', 'dist']:
         if Path(path).exists():
             shutil.rmtree(path)
-            print(f"🧹 Cleaned {path}/")
+            print(f"[CLEAN] Removed {path}/")
     
     # Create spec file
     spec_path = create_spec_file()
@@ -159,10 +165,10 @@ def build_executable():
     # Build with PyInstaller (using spec file directly)
     try:
         cmd = ['pyinstaller', '--clean', str(spec_path)]
-        print(f"🚀 Running: {' '.join(cmd)}")
+        print(f"[BUILD] Running: {' '.join(cmd)}")
         
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        print("✅ PyInstaller build completed")
+        print("[OK] PyInstaller build completed")
         
         # Check if executable was created (look for both .exe and non-.exe versions)
         exe_path = None
@@ -174,37 +180,37 @@ def build_executable():
         
         if exe_path:
             size = exe_path.stat().st_size
-            print(f"✅ Executable created: {exe_path} ({size:,} bytes)")
+            print(f"[OK] Executable created: {exe_path} ({size:,} bytes)")
             
             # Rename to .exe if needed
             if not exe_path.name.endswith('.exe'):
                 new_path = exe_path.with_suffix('.exe')
                 exe_path.rename(new_path)
                 exe_path = new_path
-                print(f"✅ Renamed to: {exe_path}")
+                print(f"[OK] Renamed to: {exe_path}")
             
             if size > 10_000_000:  # 10MB minimum
-                print("✅ Executable size looks correct (>10MB)")
+                print("[OK] Executable size looks correct (>10MB)")
                 return exe_path
             else:
-                print(f"⚠️  Executable seems small: {size:,} bytes")
+                print(f"[WARNING] Executable seems small: {size:,} bytes")
                 return exe_path
         else:
-            print("❌ Executable not found after build")
-            print("📁 Contents of dist/:")
+            print("[ERROR] Executable not found after build")
+            print("[DEBUG] Contents of dist/:")
             for item in Path('dist').iterdir():
                 print(f"   {item.name}")
             return None
             
     except subprocess.CalledProcessError as e:
-        print(f"❌ PyInstaller failed: {e}")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        print(f"[ERROR] PyInstaller failed: {e}")
+        print(f"[DEBUG] STDOUT: {e.stdout}")
+        print(f"[DEBUG] STDERR: {e.stderr}")
         return None
 
 def copy_to_electron_app(exe_path):
     """Copy executable to Electron app backend directory"""
-    print("📋 Copying to Electron app...")
+    print("Copying to Electron app...")
     
     # Target directory
     target_dir = Path('desktop-app/backend')
@@ -217,54 +223,54 @@ def copy_to_electron_app(exe_path):
     try:
         shutil.copy2(exe_path, target_path)
         size = target_path.stat().st_size
-        print(f"✅ Copied to: {target_path} ({size:,} bytes)")
+        print(f"[OK] Copied to: {target_path} ({size:,} bytes)")
         return target_path
     except Exception as e:
-        print(f"❌ Failed to copy: {e}")
+        print(f"[ERROR] Failed to copy: {e}")
         return None
 
 def verify_executable(exe_path):
     """Verify the executable is a proper Windows PE file"""
-    print("🔍 Verifying executable...")
+    print("Verifying executable...")
     
     if not exe_path.exists():
-        print("❌ Executable doesn't exist")
+        print("[ERROR] Executable doesn't exist")
         return False
     
     # Check file size
     size = exe_path.stat().st_size
-    print(f"📊 File size: {size:,} bytes")
+    print(f"[INFO] File size: {size:,} bytes")
     
     if size < 5_000_000:  # 5MB minimum
-        print("⚠️  Executable seems too small")
+        print("[WARNING] Executable seems too small")
         return False
     
     # Try to get file type (on Unix systems, this won't work perfectly)
     try:
         result = subprocess.run(['file', str(exe_path)], capture_output=True, text=True)
         file_type = result.stdout.strip()
-        print(f"📄 File type: {file_type}")
+        print(f"[INFO] File type: {file_type}")
         
         if 'PE32' in file_type or 'MS-DOS' in file_type:
-            print("✅ Appears to be a Windows executable")
+            print("[OK] Appears to be a Windows executable")
             return True
         else:
-            print("⚠️  File type doesn't look like Windows executable")
+            print("[WARNING] File type doesn't look like Windows executable")
             return True  # Still return True as file check on Unix may not be accurate
     except:
-        print("⚠️  Could not determine file type (this is normal on non-Windows systems)")
+        print("[INFO] Could not determine file type (this is normal on non-Windows systems)")
         return True  # Assume it's correct if we can't check
 
 def main():
     """Main build process"""
-    print("🚀 Enterprise Backup System - Backend Build Script")
+    print("Enterprise Backup System - Backend Build Script")
     print("=" * 60)
     
     # Change to project root
     script_dir = Path(__file__).parent
     project_root = script_dir
     os.chdir(project_root)
-    print(f"📁 Working directory: {project_root}")
+    print(f"[INFO] Working directory: {project_root}")
     
     # Check dependencies
     if not check_dependencies():
@@ -277,31 +283,31 @@ def main():
     # Build executable
     exe_path = build_executable()
     if not exe_path:
-        print("❌ Build failed")
+        print("[ERROR] Build failed")
         sys.exit(1)
     
     # Copy to Electron app
     electron_exe = copy_to_electron_app(exe_path)
     if not electron_exe:
-        print("❌ Copy failed")
+        print("[ERROR] Copy failed")
         sys.exit(1)
     
     # Verify executable
     if not verify_executable(electron_exe):
-        print("⚠️  Executable verification failed, but continuing...")
+        print("[WARNING] Executable verification failed, but continuing...")
     
     print("\n" + "=" * 60)
-    print("🎉 BUILD COMPLETED SUCCESSFULLY!")
+    print("BUILD COMPLETED SUCCESSFULLY!")
     print("=" * 60)
-    print(f"✅ Backend executable: {electron_exe}")
-    print(f"✅ Ready for Electron packaging")
-    print(f"✅ Installer should work without ENOENT errors")
+    print(f"[OK] Backend executable: {electron_exe}")
+    print("[OK] Ready for Electron packaging")
+    print("[OK] Installer should work without ENOENT errors")
     
     # Clean up spec file
     spec_path = Path('build_backend.spec')
     if spec_path.exists():
         spec_path.unlink()
-        print("🧹 Cleaned up spec file")
+        print("[CLEAN] Cleaned up spec file")
 
 if __name__ == "__main__":
     main()

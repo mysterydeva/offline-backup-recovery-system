@@ -17,6 +17,7 @@ jobs:
       NODE_VERSION: '20'
       APP_NAME: 'Enterprise Backup System'
       APP_VERSION: '1.0.0'
+      PYTHONUTF8: "1"
       
     steps:
     - name: Checkout repository
@@ -33,20 +34,20 @@ jobs:
         echo ""
         echo "=== CHECKING app DIRECTORY ==="
         if (Test-Path "${{ github.workspace }}\app") {
-          echo "✅ app directory found"
+          echo "[OK] app directory found"
           dir "${{ github.workspace }}\app"
         } else {
-          echo "❌ app directory not found"
+          echo "[ERROR] app directory not found"
           dir "${{ github.workspace }}"
           exit 1
         }
         echo ""
         echo "=== CHECKING desktop-app DIRECTORY ==="
         if (Test-Path "${{ github.workspace }}\desktop-app") {
-          echo "✅ desktop-app directory found"
+          echo "[OK] desktop-app directory found"
           dir "${{ github.workspace }}\desktop-app"
         } else {
-          echo "❌ desktop-app directory not found"
+          echo "[ERROR] desktop-app directory not found"
           dir "${{ github.workspace }}"
           exit 1
         }
@@ -67,26 +68,26 @@ jobs:
         
     - name: Create placeholder assets if missing
       run: |
-        Write-Host "🎯 Ensuring assets directory exists..."
+        Write-Host "[INFO] Ensuring assets directory exists..."
         
         # Create assets directory using Force parameter
         $assetsPath = "${{ github.workspace }}\desktop-app\assets"
         New-Item -ItemType Directory -Force -Path $assetsPath | Out-Null
-        Write-Host "✅ Created/verified assets directory: $assetsPath"
+        Write-Host "[OK] Created/verified assets directory: $assetsPath"
         
         # Check if icon.ico exists (should be committed to repo)
         $iconPath = "$assetsPath\icon.ico"
         if (Test-Path $iconPath) {
-          Write-Host "✅ Real icon.ico found at: $iconPath"
+          Write-Host "[OK] Real icon.ico found at: $iconPath"
           $iconInfo = Get-ChildItem $iconPath
-          Write-Host "📊 Icon size: $($iconInfo.Length) bytes"
+          Write-Host "[INFO] Icon size: $($iconInfo.Length) bytes"
           if ($iconInfo.Length -lt 1000) {
-            Write-Host "⚠️  Icon seems too small, should be at least 256x256 pixels"
+            Write-Host "[WARNING] Icon seems too small, should be at least 256x256 pixels"
           }
         } else {
-          Write-Host "❌ icon.ico not found at: $iconPath"
-          Write-Host "⚠️  Please commit a real 256x256 icon.ico file to desktop-app/assets/"
-          Write-Host "📁 Current assets directory contents:"
+          Write-Host "[ERROR] icon.ico not found at: $iconPath"
+          Write-Host "[WARNING] Please commit a real 256x256 icon.ico file to desktop-app/assets/"
+          Write-Host "[DEBUG] Current assets directory contents:"
           Get-ChildItem $assetsPath | Select-Object Name, Length
           exit 1
         }
@@ -94,33 +95,33 @@ jobs:
         # Only create installer.nsh (icon.ico should be in repo)
         $installerPath = "$assetsPath\installer.nsh"
         if (!(Test-Path $installerPath)) {
-          Write-Host "📄 Creating placeholder installer.nsh..."
+          Write-Host "[INFO] Creating placeholder installer.nsh..."
           echo "; Custom installer script" | Out-File -FilePath $installerPath -Encoding UTF8
-          Write-Host "✅ Created installer.nsh at: $installerPath"
+          Write-Host "[OK] Created installer.nsh at: $installerPath"
         } else {
-          Write-Host "✅ installer.nsh already exists at: $installerPath"
+          Write-Host "[OK] installer.nsh already exists at: $installerPath"
         }
         
         # Verify final assets
-        Write-Host "📁 Final assets directory contents:"
+        Write-Host "[DEBUG] Final assets directory contents:"
         Get-ChildItem $assetsPath | Select-Object Name, Length
         
     - name: Install Node.js dependencies
       run: |
-        Write-Host "📦 Installing Node.js dependencies..."
+        Write-Host "[INFO] Installing Node.js dependencies..."
         cd "${{ github.workspace }}\desktop-app"
         npm install --production=false
         
     - name: Install Python dependencies
       run: |
-        Write-Host "🐍 Installing Python dependencies..."
+        Write-Host "[INFO] Installing Python dependencies..."
         python -m pip install --upgrade pip setuptools wheel
         pip install -r "${{ github.workspace }}\app\requirements.txt"
         pip install pyinstaller==6.3.0
         
     - name: Verify Python installation
       run: |
-        Write-Host "🔍 Verifying Python installation..."
+        Write-Host "[INFO] Verifying Python installation..."
         python --version
         pip list | findstr fastapi
         pip list | findstr uvicorn
@@ -128,51 +129,55 @@ jobs:
         
     - name: Create build directories
       run: |
-        Write-Host "📁 Creating build directories..."
+        Write-Host "Creating build directories..."
         New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\desktop-app\backend"
         
+    - name: Enable UTF-8 Console
+      run: chcp 65001
+      shell: cmd
+      
     - name: Build backend executable with PyInstaller
       run: |
-        Write-Host "🔨 Building backend executable with PyInstaller..."
+        Write-Host "Building backend executable with PyInstaller..."
         
         # Navigate to project root
         cd "${{ github.workspace }}"
-        Write-Host "📍 Working directory: $(pwd)"
+        Write-Host "Working directory: $(pwd)"
         
         # Run the backend build script
         python build_backend.py
         
-        Write-Host "✅ Backend build completed"
+        Write-Host "Backend build completed"
         
     - name: Verify backend build
       run: |
-        Write-Host "🔍 Verifying backend build..."
+        Write-Host "Verifying backend build..."
         $backendPath = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
         if (Test-Path $backendPath) {
-            Write-Host "✅ Backend executable built successfully"
+            Write-Host "[OK] Backend executable built successfully"
             $backendInfo = Get-Item $backendPath
-            Write-Host "📊 Backend size: $($backendInfo.Length) bytes"
+            Write-Host "[INFO] Backend size: $($backendInfo.Length) bytes"
             
             if ($backendInfo.Length -gt 10MB) {
-                Write-Host "✅ Backend size looks correct (>10MB)"
+                Write-Host "[OK] Backend size looks correct (>10MB)"
             } else {
-                Write-Host "⚠️  Backend seems small: $($backendInfo.Length) bytes"
+                Write-Host "[WARNING] Backend seems small: $($backendInfo.Length) bytes"
             }
         } else {
-            Write-Host "❌ Backend executable not found at: $backendPath"
-            Write-Host "📁 Contents of desktop-app/backend directory:"
+            Write-Host "[ERROR] Backend executable not found at: $backendPath"
+            Write-Host "[DEBUG] Contents of desktop-app/backend directory:"
             Get-ChildItem "${{ github.workspace }}\desktop-app\backend" | Select-Object Name, Length
             exit 1
         }
         
     - name: Verify backend is a real Windows EXE
       run: |
-        Write-Host "🔍 Checking Windows EXE signature (MZ header)..."
+        Write-Host "Checking Windows EXE signature (MZ header)..."
 
         $exePath = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
 
         if (!(Test-Path $exePath)) {
-          Write-Host "❌ EXE not found!"
+          Write-Host "[ERROR] EXE not found!"
           exit 1
         }
 
@@ -180,41 +185,41 @@ jobs:
         $bytes = Get-Content $exePath -Encoding Byte -TotalCount 2
 
         if ($bytes[0] -eq 77 -and $bytes[1] -eq 90) {
-          Write-Host "✅ Valid Windows Executable (MZ header detected)"
+          Write-Host "[OK] Valid Windows Executable (MZ header detected)"
         }
         else {
-          Write-Host "❌ Not a Windows EXE! संभवतः Linux build हुआ है"
+          Write-Host "[ERROR] Not a Windows EXE! Possibly Linux build"
           exit 1
         }
 
     - name: Verify Node.js installation
       run: |
-        Write-Host "🔍 Verifying Node.js installation..."
+        Write-Host "Verifying Node.js installation..."
         cd "${{ github.workspace }}\desktop-app"
         npm list --depth=0
         
     - name: Build Electron application
       run: |
-        Write-Host "🏗️ Building Electron application..."
+        Write-Host "Building Electron application..."
         cd "${{ github.workspace }}\desktop-app"
         
         # Verify backend exists before building
         $backendPath = "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe"
         if (!(Test-Path $backendPath)) {
-          Write-Host "❌ Backend executable not found at: $backendPath"
-          Write-Host "📁 Contents of desktop-app/backend directory:"
-          Get-ChildItem "${{ github.workspace }}\desktop-app\backend" | Select-Object Name, Length
-          exit 1
+            Write-Host "[ERROR] Backend executable not found at: $backendPath"
+            Write-Host "[DEBUG] Contents of desktop-app/backend directory:"
+            Get-ChildItem "${{ github.workspace }}\desktop-app\backend" | Select-Object Name, Length
+            exit 1
         }
         
         # Verify icon exists before building
         $iconPath = "${{ github.workspace }}\desktop-app\assets\icon.ico"
         if (!(Test-Path $iconPath)) {
-          Write-Host "❌ Icon file not found at: $iconPath"
-          exit 1
+            Write-Host "[ERROR] Icon file not found at: $iconPath"
+            exit 1
         }
         
-        Write-Host "📊 Pre-build verification:"
+        Write-Host "[INFO] Pre-build verification:"
         Write-Host "- Backend: $(Get-ChildItem $backendPath).Length bytes"
         Write-Host "- Icon: $(Get-ChildItem $iconPath).Length bytes"
         
@@ -223,20 +228,20 @@ jobs:
         
     - name: Verify installer build
       run: |
-        Write-Host "🔍 Verifying installer build..."
+        Write-Host "[INFO] Verifying installer build..."
         $distPath = "${{ github.workspace }}\desktop-app\dist"
-        Write-Host "📁 Contents of dist directory:"
+        Write-Host "[DEBUG] Contents of dist directory:"
         Get-ChildItem $distPath | Select-Object Name, Length
         
         $installer = Get-ChildItem $distPath\*.exe -Recurse | Where-Object { $_.Name -like "*Setup*" }
         if ($installer) {
-          Write-Host "✅ Installer built successfully"
-          Write-Host "📊 Installer: $($installer.Name) ($($installer.Length) bytes)"
+          Write-Host "[OK] Installer built successfully"
+          Write-Host "[INFO] Installer: $($installer.Name) ($($installer.Length) bytes)"
         } else {
-          Write-Host "❌ Setup installer not found"
-          Write-Host "🔍 Looking for any .exe files:"
+          Write-Host "[ERROR] Setup installer not found"
+          Write-Host "[DEBUG] Looking for any .exe files:"
           Get-ChildItem $distPath\*.exe -Recurse | Select-Object Name, Length
-          Write-Host "📁 Full dist directory listing:"
+          Write-Host "[DEBUG] Full dist directory listing:"
           Get-ChildItem $distPath -Recurse | Select-Object Name, Length
           exit 1
         }
@@ -252,25 +257,25 @@ jobs:
     - name: Generate build summary
       run: |
         $installer = Get-ChildItem "${{ github.workspace }}\desktop-app\dist\*Setup*.exe" -Recurse | Where-Object { $_.Name -like "*Setup*" }
-        echo "## 🎉 Build Summary" >> $env:GITHUB_STEP_SUMMARY
+        echo "## Build Summary" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "### ✅ Successfully Built:" >> $env:GITHUB_STEP_SUMMARY
+        echo "### Successfully Built:" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Backend**: BackupBackend.exe ($(Get-Item "${{ github.workspace }}\desktop-app\backend\BackupBackend.exe").Length bytes)" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Installer**: $($installer.Name) ($($installer.Length) bytes)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "### 📦 Application Details:" >> $env:GITHUB_STEP_SUMMARY
+        echo "### Application Details:" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Name**: ${{ env.APP_NAME }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Version**: ${{ env.APP_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Platform**: Windows (x64)" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Backend**: FastAPI + Uvicorn" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Frontend**: Electron Desktop App" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "### 🚀 Installation:" >> $env:GITHUB_STEP_SUMMARY
+        echo "### Installation:" >> $env:GITHUB_STEP_SUMMARY
         echo "1. Download the Setup.exe from the artifacts below" >> $env:GITHUB_STEP_SUMMARY
         echo "2. Run as administrator" >> $env:GITHUB_STEP_SUMMARY
         echo "3. Desktop and Start Menu shortcuts will be created automatically" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "### 🔐 Default Login:" >> $env:GITHUB_STEP_SUMMARY
+        echo "### Default Login:" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Username**: admin" >> $env:GITHUB_STEP_SUMMARY
         echo "- **Password**: admin123" >> $env:GITHUB_STEP_SUMMARY
         
@@ -294,39 +299,39 @@ jobs:
       with:
         name: Enterprise Backup System ${{ github.ref_name }}
         body: |
-          ## 🎉 Enterprise Backup System ${{ github.ref_name }}
+          ## Enterprise Backup System ${{ github.ref_name }}
           
-          ### ✨ Features
-          - 🖥️ **Desktop Application**: Native Windows desktop app
-          - 🔒 **Fully Offline**: No internet connection required
-          - ⚡ **FastAPI Backend**: High-performance REST API
-          - 🎨 **Modern UI**: Clean and intuitive dashboard
-          - 🔐 **Secure**: AES-256 encryption for all backups
-          - ⏰ **Automated**: Scheduled backup support
-          - 📊 **Reports**: Detailed backup and restore reports
+          ### Features
+          - **Desktop Application**: Native Windows desktop app
+          - **Fully Offline**: No internet connection required
+          - **FastAPI Backend**: High-performance REST API
+          - **Modern UI**: Clean and intuitive dashboard
+          - **Secure**: AES-256 encryption for all backups
+          - **Automated**: Scheduled backup support
+          - **Reports**: Detailed backup and restore reports
           
-          ### 📦 Installation
+          ### Installation
           1. Download `BackupSystem-Setup.exe` below
           2. Right-click and "Run as administrator"
           3. Follow the installation wizard
           4. Launch from Desktop or Start Menu
           
-          ### 🔑 Default Credentials
+          ### Default Credentials
           - **Username**: `admin`
           - **Password**: `admin123`
           
-          ### 🚀 Quick Start
+          ### Quick Start
           1. Double-click the desktop shortcut
           2. Dashboard opens automatically
           3. Configure backup destinations
           4. Create your first backup job
           
-          ### 📋 System Requirements
+          ### System Requirements
           - Windows 7 SP1 or later (Windows 10/11 recommended)
           - 4GB RAM minimum (8GB recommended)
           - 500MB disk space + backup storage
           
-          ### 🔧 Technical Details
+          ### Technical Details
           - **Backend**: FastAPI + Uvicorn (Python 3.12)
           - **Frontend**: Electron Desktop Application
           - **Database**: SQLite (embedded)
