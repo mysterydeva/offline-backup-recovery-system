@@ -185,10 +185,10 @@ jobs:
         $bytes = [System.IO.File]::ReadAllBytes($exePath)
 
         if ($bytes[0] -eq 77 -and $bytes[1] -eq 90) {
-          Write-Host "✅ Valid Windows EXE (MZ header detected)"
+          Write-Host "Valid Windows EXE (MZ header detected)"
         }
         else {
-          Write-Host "❌ Not a Windows executable!"
+          Write-Host "Not a Windows executable!"
           exit 1
         }
 
